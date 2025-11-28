@@ -1,61 +1,162 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Seattle Parking Map</title>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
+
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
+
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
+        :root{
+            --bg:#f8fafc;--panel-bg:#ffffff;--muted:#475569;--text-main:#0f172a;--accent:#2563eb;--glass-border:rgba(15,23,42,0.06);
         }
-        #map { 
-            position: absolute; 
-            top: 0; 
-            bottom: 0; 
-            width: 100%; 
-        }
+        *{box-sizing:border-box}
+        html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#f8fafc 0%,#f1f5f9 100%);color:var(--text-main)}
+        .app{display:flex;flex-direction:column;height:100vh}
+        .app-header{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(15,23,42,0.04)}
+        .app-title{font-size:1.125rem;font-weight:600}.app-subtitle{font-size:.85rem;color:var(--muted)}
+        .app-main{display:flex;flex:1;min-height:0;overflow:hidden}
+        .sidebar{width:340px;max-width:100%;padding:1rem;background:var(--panel-bg);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;gap:.75rem;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding-right:.6rem;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+        .panel{background:var(--panel-bg);border-radius:10px;padding:.9rem .95rem;border:1px solid var(--glass-border);box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+        .panel h2{margin:0 0 .35rem 0;font-size:.95rem;font-weight:600}
+        .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+        .chip{font-size:.75rem;padding:.22rem .6rem;border-radius:999px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.12);color:var(--accent)}
+        .legend{display:flex;flex-direction:column;gap:.5rem;margin-top:.4rem}
+        .legend-item{display:flex;gap:.6rem;align-items:center;font-size:.85rem}
+        .legend-symbol{width:14px;height:14px;border-radius:4px;display:inline-block}
+        .symbol-garage{background:linear-gradient(135deg,#60a5fa,#3b82f6)}
+        .symbol-street{background:linear-gradient(135deg,#34d399,#10b981)}
+        .symbol-paid{background:linear-gradient(135deg,#f97316,#f43f5e)}
+        .symbol-restricted{background:linear-gradient(135deg,#c026d3,#7c3aed)}
+        .filters{display:flex;flex-direction:column;gap:.6rem;margin-top:.4rem}
+        .filters label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:.25rem}
+        .filters select,.filters input[type="text"],.filters input[type="time"],.filters input[type="range"]{width:100%;font-size:.9rem;padding:.45rem .6rem;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:#fff;color:var(--text-main);outline:none}
+        .search-row{display:flex;gap:.5rem;align-items:center}
+        .search-row input[type="text"]{flex:1;padding:.55rem .7rem;border-radius:8px}
+        .search-row button{display:inline-flex;align-items:center;justify-content:center;padding:.5rem .7rem;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600}
+        .layer-toggles{display:flex;gap:.5rem;flex-wrap:wrap}
+        .layer-toggle{display:inline-flex;align-items:center;gap:.45rem;background:#f8fafc;padding:.28rem .45rem;border-radius:9px;border:1px solid rgba(15,23,42,0.04);cursor:pointer;color:var(--muted);font-size:.85rem}
+        .map-wrap{position:relative;flex:1;min-width:0;overflow:hidden}
+        #map{position:absolute;inset:0}
+        .map-controls{position:absolute;left:1rem;top:1rem;display:flex;flex-direction:column;gap:.6rem;z-index:5}
+        .map-btn{display:inline-flex;align-items:center;gap:.6rem;background:#fff;color:var(--text-main);padding:.45rem .6rem;border-radius:8px;font-size:.85rem;border:1px solid rgba(15,23,42,0.06);cursor:pointer;box-shadow:0 6px 16px rgba(2,6,23,0.06)}
+        .results{margin-top:.6rem;border-radius:8px;border:1px dashed rgba(15,23,42,0.04);padding:.5rem;font-size:.9rem;color:var(--muted);background:linear-gradient(180deg,rgba(248,250,252,0.6),rgba(255,255,255,0.6))}
+        .sidebar-footer{font-size:.78rem;color:var(--muted);margin-top:auto}
+        @media (max-width:880px){.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--glass-border);position:relative;z-index:3}.app-main{flex-direction:column}}
     </style>
 </head>
 <body>
-    <div id='map'></div>
-    <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoidGlubmFtIiwiYSI6ImNtaDI4djdsYTJ3dW8ybXE0M3g0OGpwdXkifQ.52zB7C-sGgsdU1t-EWdHnw';
-        
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: [-122.3321, 47.6062],
-            zoom: 12
-        });
-        map.on('load', async () => {
-            try {
-                let response = await fetch('assets/garages_clean.geojson');
-                let garageData = await response.json();
-                map.addSource('garages', {
-                    type: 'geojson',
-                    data: garageData
-                });
-                map.addLayer({
-                    id: 'garage-points',
-                    type: 'circle',
-                    source: 'garages',
-                    paint: {
-                        'circle-radius': 8,
-                        'circle-color': '#3b82f6',
-                        'circle-stroke-width': 2,
-                        'circle-stroke-color': '#ffffff'
-                    }
-                });
-                
-                console.log('Garages loaded:', garageData.features.length);
-                
-            } catch (error) {
-                console.error('Error loading garages:', error);
-            }
-        });
-    </script>
+    <div class="app" role="application" aria-labelledby="mapTitle">
+        <header class="app-header">
+            <div>
+                <div id="mapTitle" class="app-title">Seattle Parking Map</div>
+                <div class="app-subtitle">Off-street & on-street parking around central Seattle</div>
+            </div>
+
+            <div style="display:flex;gap:.6rem;align-items:center;">
+                <button class="map-btn" aria-label="Center on my location" id="btnGeolocate">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" width="16" height="16"><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12h-1M4 12H3M12 21v-1M12 4V3M18.36 5.64l-.7.7M6.34 17.66l-.7.7M18.36 18.36l-.7-.7M6.34 6.34l-.7-.7" stroke="#0f172a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    My location
+                </button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <aside class="sidebar" aria-label="Map controls">
+                <section class="panel">
+                    <h2>About this map</h2>
+                    <p>An interactive WebGIS to locate parking in Seattle. Use the filters below to limit results and the legend to interpret map symbols.</p>
+                    <div class="chips" aria-hidden="true"><span class="chip">Seattle</span><span class="chip">Parking</span></div>
+                </section>
+
+                <section class="panel">
+                    <h2>Legend</h2>
+                    <div class="legend" role="list">
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-garage" aria-hidden="true"></span><span>Garage location (off-street)</span></div>
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-street" aria-hidden="true"></span><span>On-street / blockface</span></div>
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-paid" aria-hidden="true"></span><span>Parking points</span></div>
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-restricted" aria-hidden="true"></span><span>Restricted / permit-only</span></div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h2>Filters & search</h2>
+                    <form class="filters" id="filtersForm" aria-describedby="filtersDesc" onsubmit="return false;">
+                        <p id="filtersDesc" style="margin:0 0 .4rem 0;color:var(--muted);font-size:.82rem;">Search an address or place and the app will show nearby parking.</p>
+
+                        <label for="searchInput">Address or place</label>
+                        <div class="search-row">
+                            <input id="searchInput" type="text" placeholder="e.g., 400 Pike St, Seattle" aria-label="Search address or place">
+                            <button id="btnSearch" title="Find nearest parking">Find</button>
+                        </div>
+
+                        <label for="priceFilter">Price range</label>
+                        <select id="priceFilter" aria-label="Filter by price">
+                            <option value="all">All prices</option>
+                            <option value="low">Under $15</option>
+                            <option value="mid">$15–$30</option>
+                            <option value="high">Over $30</option>
+                        </select>
+
+                        <div style="display:flex;gap:.6rem">
+                            <div style="flex:1">
+                                <label for="timeFrom">Start time</label>
+                                <input id="timeFrom" type="time" class="small" aria-label="Start time">
+                            </div>
+                            <div style="flex:1">
+                                <label for="timeTo">End time</label>
+                                <input id="timeTo" type="time" class="small" aria-label="End time">
+                            </div>
+                        </div>
+
+                        <label for="timeNow" style="margin-top:.15rem"><input id="timeNow" type="checkbox" aria-label="Use current time (Now)">&nbsp;Use current time ("Now")</label>
+
+                        <label style="margin-top:.4rem">Layers</label>
+                        <div class="layer-toggles" role="group" aria-label="Layer toggles">
+                            <!-- these inputs are used by the JS below to toggle layer visibility -->
+                            <label class="layer-toggle"><input id="toggleGarages" type="checkbox" checked>Garages</label>
+                            <label class="layer-toggle"><input id="toggleBlockface" type="checkbox" checked>On-street</label>
+                            <label class="layer-toggle"><input id="toggleRestricted" type="checkbox" checked>Parking points</label>
+                        </div>
+
+                        <label for="sortSelect" style="margin-top:.3rem">Sort results</label>
+                        <select id="sortSelect" aria-label="Sort results">
+                            <option value="distance">Distance</option>
+                            <option value="price">Price</option>
+
+                        </select>
+
+                        <div id="searchResults" class="results" aria-live="polite">Enter an address and press "Find" to show nearby parking here.</div>
+                    </form>
+                </section>
+
+                <div class="sidebar-footer">Data source: ....<br>Created for GEOG328.</div>
+            </aside>
+
+            <section class="map-wrap" aria-label="Map view">
+                <div id="map" role="region" aria-label="Parking map"></div>
+
+                <div class="map-controls" role="toolbar" aria-label="Map controls">
+                    <button id="btnZoomIn" class="map-btn" aria-label="Zoom in">+</button>
+                    <button id="btnZoomOut" class="map-btn" aria-label="Zoom out">−</button>
+                    <button id="btnToggleLegend" class="map-btn" aria-label="Toggle map legend">Legend</button>
+                </div>
+
+                <div class="map-legend-overlay" id="mapLegend" aria-hidden="false" style="position:absolute;right:1rem;bottom:1rem;background:rgba(255,255,255,.98);padding:.6rem .75rem;border-radius:10px;border:1px solid rgba(15,23,42,.06);box-shadow:0 10px 28px rgba(2,6,23,.06);max-width:320px">
+                    <strong>How to use</strong>
+                    <div style="font-size:.88rem;color:var(--muted)">Pan and zoom to explore the map. Click a symbol for details. Use the sidebar to filter by price or time.</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+         
+    <script src="map-layers.js"></script>
 </body>
 </html>
