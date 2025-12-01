@@ -1,0 +1,338 @@
+/* ------------------------------ */
+/*          Root + Reset          */
+/* ------------------------------ */
+
+:root {
+  --bg-glass: rgba(255, 255, 255, 0.15);
+  --bg-glass-strong: rgba(255, 255, 255, 0.25);
+  --blur: blur(10px);
+  --border-glass: rgba(255, 255, 255, 0.25);
+  --shadow-soft: 0 4px 12px rgba(0,0,0,0.25);
+  --shadow-hover: 0 6px 18px rgba(0,0,0,0.32);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  color: var(--text-main);
+}
+
+
+
+/* -----------------------------------------
+   TOP BAR (HEADER)
+----------------------------------------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #2368ad;
+}
+
+.app-header {
+
+  background: var(--bg-glass);
+  backdrop-filter: var(--blur);
+  border-bottom: 1px solid var(--border-glass);
+  border-radius: 0 0 20px 20px;
+  padding: 1rem 1.4rem;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+/* Hover glow effect */
+.app-header:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* Title + subtitle styling */
+.app-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+.app-subtitle {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-top: -4px;
+}
+
+.app-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* -----------------------------------------
+   SIDEBAR
+----------------------------------------- */
+
+.sidebar {
+  width: 320px;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 1rem;
+  border-right: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-soft);
+  border-radius: 0 20px 20px 0;
+  transition: box-shadow 0.3s ease;
+}
+
+.sidebar:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* ------------------------------ */
+/*          Panels / UI           */
+/* ------------------------------ */
+
+.panel {
+  background: var(--panel-bg);
+  border-radius: 10px;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.panel h2 {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ------------------------------ */
+/*           Chips                */
+/* ------------------------------ */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.chip {
+  font-size: 0.75rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  color: var(--accent);
+}
+
+/* ------------------------------ */
+/*            Legend              */
+/* ------------------------------ */
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.legend-item {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.legend-symbol {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.symbol-garage {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+.symbol-street {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.symbol-paid {
+  background: linear-gradient(135deg, #f97316, #f43f5e);
+}
+
+.symbol-restricted {
+  background: linear-gradient(135deg, #c026d3, #7c3aed);
+}
+
+/* ------------------------------ */
+/*            Filters             */
+/* ------------------------------ */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.filters label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.filters select,
+.filters input[type="text"],
+.filters input[type="time"],
+.filters input[type="range"] {
+  width: 100%;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: #fff;
+  color: var(--text-main);
+  outline: none;
+}
+
+/* ------------------------------ */
+/*          Search Row            */
+/* ------------------------------ */
+
+.search-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-row input[type="text"] {
+  flex: 1;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+}
+
+.search-row button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ------------------------------ */
+/*        Layer Toggle UI         */
+/* ------------------------------ */
+
+.layer-toggles {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #f8fafc;
+  padding: 0.28rem 0.45rem;
+  border-radius: 9px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ------------------------------ */
+/*              Map               */
+/* ------------------------------ */
+
+.map-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+}
+
+.map-controls {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  z-index: 5;
+}
+
+/* Buttons inside sidebar or header */
+.map-btn {
+  background: rgba(255,255,255,0.22);
+  color: #0f172a;
+  border: 1px solid rgba(255,255,255,0.35);
+  padding: 0.45rem 0.9rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.map-btn:hover {
+  background: rgba(255,255,255,0.32);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* ------------------------------ */
+/*            Results             */
+/* ------------------------------ */
+
+.results {
+  margin-top: 0.6rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(15, 23, 42, 0.04);
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.6), rgba(255, 255, 255, 0.6));
+}
+
+/* ------------------------------ */
+/*         Responsive             */
+/* ------------------------------ */
+
+@media (max-width: 880px) {
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--glass-border);
+    position: relative;
+    z-index: 3;
+  }
+
+  .app-main {
+    flex-direction: column;
+  }
+}
