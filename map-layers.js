@@ -144,31 +144,179 @@ function applyPriceRangeFilter() {
   const priceMin = parseFloat(document.getElementById('priceMin')?.value || 0);
   const priceMax = parseFloat(document.getElementById('priceMax')?.value || 10);
   
-  // Update display
   const display = document.getElementById('priceDisplay');
   if (display) {
     display.textContent = `${priceMin} - ${priceMax}`;
   }
-  
-  // Filter expression: show if weekday_rate is within range OR if it's free (0 or null)
+
   const filterExpression = [
     'any',
-    // Include free parking (rate is 0 or doesn't exist)
+    //include free parking (rate is 0 or doesn't exist)
     ['!', ['has', 'weekday_rate']],
     ['==', ['get', 'weekday_rate'], 0],
-    // Include parking within price range
+    //include parking within price range
     ['all',
       ['>=', ['get', 'weekday_rate'], priceMin],
       ['<=', ['get', 'weekday_rate'], priceMax]
     ]
   ];
   
-  // Apply filter to all relevant layers (including the new restricted layer)
   ['garage-points', 'street-parking-layer', 'parking-all-points', 'parking-restricted'].forEach(layerId => {
     if (map.getLayer(layerId)) {
       map.setFilter(layerId, filterExpression);
     }
   });
+}
+
+//search marker (global so we can remove it later)
+let searchMarker = null;
+
+//search and show nearby parking
+async function searchAndFilterByDistance() {
+  const searchInput = document.getElementById('searchInput').value.trim();
+  if (!searchInput) {
+    alert('Please enter an address or place');
+    return;
+  }
+  
+  const resultsDiv = document.getElementById('searchResults');
+  resultsDiv.innerHTML = '<p>🔍 Searching...</p>';
+  
+  //use Mapbox Geocoding API
+  const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchInput)}.json?access_token=${mapboxgl.accessToken}&proximity=-122.3321,47.6062&limit=1`;
+  
+  try {
+    const response = await fetch(geocodeUrl);
+    const data = await response.json();
+    
+    if (data.features && data.features.length > 0) {
+      const [lng, lat] = data.features[0].center;
+      const placeName = data.features[0].place_name;
+      
+      // Fly to the location
+      map.flyTo({ center: [lng, lat], zoom: 15, duration: 1500 });
+      
+      // Remove old marker if exists
+      if (searchMarker) {
+        searchMarker.remove();
+      }
+      
+      //add a marker for the searched location
+      searchMarker = new mapboxgl.Marker({ color: '#ef4444' })
+        .setLngLat([lng, lat])
+        .setPopup(new mapboxgl.Popup().setHTML(`<strong>Search Location</strong><br>${placeName}`))
+        .addTo(map);
+      
+      calculateNearbyParking(lng, lat);
+    } else {
+      resultsDiv.innerHTML = '<p style="color:#ef4444">❌ Location not found. Try a different address.</p>';
+    }
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    resultsDiv.innerHTML = '<p style="color:#ef4444">❌ Error searching for location. Please try again.</p>';
+  }
+}
+
+//calculate distance 
+function calculateDistance(lon1, lat1, lon2, lat2) {
+  const R = 3958.8; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; 
+}
+
+//display nearby parking
+function calculateNearbyParking(searchLng, searchLat) {
+  const results = [];
+  
+  //all parking features from all sources
+  const sources = [
+    { id: 'garages-src', type: 'Garage' },
+    { id: 'parkingpoints-src', type: 'Street' },
+    { id: 'restricted-src', type: 'Restricted' }
+  ];
+  
+  sources.forEach(({ id, type }) => {
+    const source = map.getSource(id);
+    if (source && source._data && source._data.features) {
+      source._data.features.forEach(feature => {
+        let coords;
+        if (feature.geometry.type === 'Point') {
+          coords = feature.geometry.coordinates;
+        } else if (feature.geometry.type === 'LineString') {
+          coords = feature.geometry.coordinates[0];
+        }
+        
+        if (coords) {
+          const distance = calculateDistance(searchLng, searchLat, coords[0], coords[1]);
+          
+          //only include parking within 1.5 miles
+          if (distance <= 1.5) {
+            results.push({
+              name: feature.properties.name || feature.properties.facility || feature.properties.category || type + ' Parking',
+              distance: distance,
+              rate: feature.properties.weekday_rate || null,
+              spaces: feature.properties.total_spaces || feature.properties.capacity || '?',
+              coordinates: coords,
+              type: type,
+              properties: feature.properties
+            });
+          }
+        }
+      });
+    }
+  });
+  
+  //sort by distance or price based on sortSelect
+  const sortBy = document.getElementById('sortSelect')?.value || 'distance';
+  results.sort((a, b) => {
+    if (sortBy === 'distance') {
+      return a.distance - b.distance;
+    } else {
+      const priceA = typeof a.rate === 'number' ? a.rate : 999;
+      const priceB = typeof b.rate === 'number' ? b.rate : 999;
+      return priceA - priceB;
+    }
+  });
+  
+  displaySearchResults(results.slice(0, 15)); //show top 15
+}
+
+function displaySearchResults(results) {
+  const resultsDiv = document.getElementById('searchResults');
+  
+  if (results.length === 0) {
+    resultsDiv.innerHTML = '<p style="color:#64748b">No parking found within 2miles of this location.</p>';
+    return;
+  }
+  
+  const html = `
+    <div style="margin-bottom:0.5rem;font-weight:600;color:#0f172a">
+      Found ${results.length} parking options nearby:
+    </div>
+  ` + results.map((r, i) => {
+    const rateDisplay = typeof r.rate === 'number' ? `${r.rate.toFixed(2)}/hr` : 'Free';
+    const typeColor = r.type === 'Garage' ? '#3b82f6' : r.type === 'Restricted' ? '#7c3aed' : '#f97316';
+    
+    return `
+      <div class="result-item" style="padding:0.6rem;border-bottom:1px solid #e2e8f0;cursor:pointer;border-left:3px solid ${typeColor}" 
+           onclick="map.flyTo({center:[${r.coordinates[0]},${r.coordinates[1]}],zoom:17}); new mapboxgl.Popup().setLngLat([${r.coordinates[0]},${r.coordinates[1]}]).setHTML('<strong>${r.name}</strong><div>Distance: ${r.distance.toFixed(2)} miles<br>Rate: ${rateDisplay}<br>Spaces: ${r.spaces}</div>').addTo(map);">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <strong style="font-size:0.9rem">${i + 1}. ${r.name}</strong>
+          <span style="font-size:0.8rem;color:#10b981;font-weight:600">${rateDisplay}</span>
+        </div>
+        <div style="font-size:0.85rem;color:#64748b;margin-top:0.2rem">
+          📍 ${r.distance.toFixed(2)} miles away • ${r.type} • ${r.spaces} spaces
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  resultsDiv.innerHTML = html;
 }
 
 map.on('load', async () => {
@@ -215,14 +363,14 @@ map.on('load', async () => {
     layerId: 'parking-restricted',
     geojsonPath: 'assets/parking_restricted.geojson',
     circlePaint: {
-      'circle-color': '#7c3aed',  
+      'circle-color': '#7c3aed',
       'circle-radius': 5,
       'circle-stroke-width': 1.5,
       'circle-stroke-color': '#ffffff'
     }
   });
 
-  // Initialize visibility from checkboxes (4 layers now)
+  
   const initVisibility = [
     { checkboxId: 'toggleGarages', layerId: 'garage-points' },
     { checkboxId: 'toggleBlockface', layerId: 'street-parking-layer' },
@@ -243,6 +391,35 @@ map.on('load', async () => {
       setLayerVisibility(layerId, evt.target.checked);
     });
   });
+
+  // Wire up search functionality
+  const btnSearch = document.getElementById('btnSearch');
+  const searchInput = document.getElementById('searchInput');
+  
+  if (btnSearch) {
+    btnSearch.addEventListener('click', searchAndFilterByDistance);
+  }
+  
+  if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchAndFilterByDistance();
+      }
+    });
+  }
+  
+  // Wire up sort selector
+  const sortSelect = document.getElementById('sortSelect');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', () => {
+      // Re-run search if we have a marker (meaning search was performed)
+      if (searchMarker) {
+        const center = searchMarker.getLngLat();
+        calculateNearbyParking(center.lng, center.lat);
+      }
+    });
+  }
 
   // wire for price range filter inputs
   const priceMin = document.getElementById('priceMin');
@@ -297,7 +474,7 @@ map.on('load', async () => {
     });
   }
 
-  // Click popup: handle both point and line features (all 4 layers)
+  // Click popup: handle both point and line features 
   map.on('click', (e) => {
     const features = map.queryRenderedFeatures(e.point, {
       layers: ['garage-points', 'street-parking-layer', 'parking-all-points', 'parking-restricted']
