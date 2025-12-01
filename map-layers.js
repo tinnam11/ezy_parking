@@ -1,4 +1,3 @@
-
 mapboxgl.accessToken = 'pk.eyJ1IjoibXJpY2hlcnQiLCJhIjoiY21oNTl4NnlxMDVqdTJqb205aDFmcWU2ZSJ9.0TGc-97aSBJ8xmNjTjjbuw';
 
 const map = new mapboxgl.Map({
@@ -140,6 +139,38 @@ async function addGeoJSONLayer(options) {
   }
 }
 
+// price filter function 
+function applyPriceRangeFilter() {
+  const priceMin = parseFloat(document.getElementById('priceMin')?.value || 0);
+  const priceMax = parseFloat(document.getElementById('priceMax')?.value || 10);
+  
+  // Update display
+  const display = document.getElementById('priceDisplay');
+  if (display) {
+    display.textContent = `${priceMin} - ${priceMax}`;
+  }
+  
+  // Filter expression: show if weekday_rate is within range OR if it's free (0 or null)
+  const filterExpression = [
+    'any',
+    // Include free parking (rate is 0 or doesn't exist)
+    ['!', ['has', 'weekday_rate']],
+    ['==', ['get', 'weekday_rate'], 0],
+    // Include parking within price range
+    ['all',
+      ['>=', ['get', 'weekday_rate'], priceMin],
+      ['<=', ['get', 'weekday_rate'], priceMax]
+    ]
+  ];
+  
+  // Apply filter to all relevant layers (including the new restricted layer)
+  ['garage-points', 'street-parking-layer', 'parking-all-points', 'parking-restricted'].forEach(layerId => {
+    if (map.getLayer(layerId)) {
+      map.setFilter(layerId, filterExpression);
+    }
+  });
+}
+
 map.on('load', async () => {
   // Garages (points)
   await addGeoJSONLayer({
@@ -152,23 +183,20 @@ map.on('load', async () => {
       'circle-stroke-width': 2,
       'circle-stroke-color': '#ffffff'
     }
-  }
-    );
+  });
 
-  // street_parking_detailed: will render as line if blockfaces are lines; we still pass a linePaint option
+  // street_parking_detailed: will render as line if blockfaces are lines
   await addGeoJSONLayer({
     sourceId: 'streetparking-src',
     layerId: 'street-parking-layer',
     geojsonPath: 'assets/street_parking_detailed.geojson',
-    // The default linePaint inside addGeoJSONLayer already includes zoom-based expressions,
-    // but allow overrides here if desired.
     linePaint: {
       // you can override color here if you want different color than default
       // 'line-color': '#10b981'
     }
   });
 
-  // parking_all_points (points)
+  // parking_all_points (overview points - all types)
   await addGeoJSONLayer({
     sourceId: 'parkingpoints-src',
     layerId: 'parking-all-points',
@@ -181,11 +209,25 @@ map.on('load', async () => {
     }
   });
 
-  // Initialize visibility from checkboxes
+  // parking_restricted (restricted/permit zones only)
+  await addGeoJSONLayer({
+    sourceId: 'restricted-src',
+    layerId: 'parking-restricted',
+    geojsonPath: 'assets/parking_restricted.geojson',
+    circlePaint: {
+      'circle-color': '#7c3aed',  
+      'circle-radius': 5,
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#ffffff'
+    }
+  });
+
+  // Initialize visibility from checkboxes (4 layers now)
   const initVisibility = [
     { checkboxId: 'toggleGarages', layerId: 'garage-points' },
     { checkboxId: 'toggleBlockface', layerId: 'street-parking-layer' },
-    { checkboxId: 'toggleRestricted', layerId: 'parking-all-points' }
+    { checkboxId: 'togglePoints', layerId: 'parking-all-points' },
+    { checkboxId: 'toggleRestricted', layerId: 'parking-restricted' }
   ];
   initVisibility.forEach(({ checkboxId, layerId }) => {
     const el = document.getElementById(checkboxId);
@@ -201,6 +243,40 @@ map.on('load', async () => {
       setLayerVisibility(layerId, evt.target.checked);
     });
   });
+
+  // wire for price range filter inputs
+  const priceMin = document.getElementById('priceMin');
+  const priceMax = document.getElementById('priceMax');
+  const priceRange = document.getElementById('priceRange');
+
+  if (priceMin && priceMax) {
+    // Min/max inputs
+    priceMin.addEventListener('input', applyPriceRangeFilter);
+    priceMax.addEventListener('input', applyPriceRangeFilter);
+  }
+
+  if (priceRange) {
+    // Simple slider (controls max price)
+    priceRange.addEventListener('input', (e) => {
+      const maxPrice = parseFloat(e.target.value);
+      const display = document.getElementById('priceDisplay');
+      if (display) display.textContent = maxPrice.toFixed(1);
+      
+      // Filter: show everything from $0 to selected max
+      const filterExpression = [
+        'any',
+        ['!', ['has', 'weekday_rate']],
+        ['==', ['get', 'weekday_rate'], 0],
+        ['<=', ['get', 'weekday_rate'], maxPrice]
+      ];
+      
+      ['garage-points', 'street-parking-layer', 'parking-all-points', 'parking-restricted'].forEach(layerId => {
+        if (map.getLayer(layerId)) {
+          map.setFilter(layerId, filterExpression);
+        }
+      });
+    });
+  }
 
   // Zoom buttons
   const btnZoomIn = document.getElementById('btnZoomIn');
@@ -219,15 +295,12 @@ map.on('load', async () => {
         console.warn('Geolocation error', err); alert('Unable to get current location.');
       }, { enableHighAccuracy: true });
     });
-
-
-
   }
 
-  // Click popup: handle both point and line features
+  // Click popup: handle both point and line features (all 4 layers)
   map.on('click', (e) => {
     const features = map.queryRenderedFeatures(e.point, {
-      layers: ['garage-points', 'street-parking-layer', 'parking-all-points']
+      layers: ['garage-points', 'street-parking-layer', 'parking-all-points', 'parking-restricted']
     });
     if (!features.length) return;
     const f = features[0];

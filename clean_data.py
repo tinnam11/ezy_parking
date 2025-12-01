@@ -62,12 +62,13 @@ class SeattleParkingCleaner:
             df['unrestricted_spaces'] = pd.to_numeric(df['UNRESTRICTED'], errors='coerce').fillna(0).astype(int)
             print(f"  ✓ Cleaned space counts")
 
-            df['weekday_rate'] = df['WKD_RATE1'].apply(self._clean_currency)
-            df['weekday_start'] = df['START_TIME_WKD'].apply(self._standardize_time)
-            df['weekday_end'] = df['END_TIME_WKD'].apply(self._standardize_time)
-            print(f"  ✓ Cleaned weekday pricing")
+            # In clean_blockface_comprehensive, replace the weekday_rate line with:
+            df['weekday_rate_1'] = df['WKD_RATE1'].apply(self._clean_currency)
+            df['weekday_rate_2'] = df['WKD_RATE2'].apply(self._clean_currency)
 
-            df['price_category'] = df['weekday_rate'].apply(self._categorize_price)
+            # Take the maximum of the two rates (or rate1 if rate2 is missing)
+            df['weekday_rate'] = df[['weekday_rate_1', 'weekday_rate_2']].max(axis=1, skipna=True)
+            print(f"  ✓ Cleaned weekday pricing")
 
             df['has_paid_parking'] = df['paid_spaces'] > 0
             df['is_permit_zone'] = df['RPZ_ZONE'].notna()
@@ -255,9 +256,11 @@ class SeattleParkingCleaner:
             street_points = street.copy()
             street_points['geometry'] = street_points.geometry.centroid
 
+            # UPDATED: Include weekday_rate in the output
             street_simple = street_points[['geometry', 'parking_type', 'category_clean', 
-                                          'total_spaces', 'price_category']].copy()
+                                        'total_spaces', 'weekday_rate']].copy()  # Changed from price_category
             street_simple = street_simple.rename(columns={'category_clean': 'category'})
+            
             if os.path.exists(garage_path):
                 garages = gpd.read_file(garage_path)
                 garage_simple = garages[['geometry', 'parking_type']].copy()
@@ -266,7 +269,10 @@ class SeattleParkingCleaner:
                     garage_simple['total_spaces'] = garages['capacity']
                 else:
                     garage_simple['total_spaces'] = 0
-                garage_simple['price_category'] = 'UNKNOWN'
+                
+                # UPDATED: Add weekday_rate column (garages don't have rates, so set to None)
+                garage_simple['weekday_rate'] = None
+                
                 combined = pd.concat([street_simple, garage_simple], ignore_index=True)
             else:
                 combined = street_simple
@@ -414,7 +420,8 @@ class SeattleParkingCleaner:
             'street_parking_overview.geojson',
             'parking_tiers_clean.geojson',
             'garages_clean.geojson',
-            'parking_all_points.geojson'
+            'parking_all_points.geojson',
+            'parking_restricted.geojson'
         ]
         
         total_size = 0
@@ -444,6 +451,50 @@ class SeattleParkingCleaner:
         print(f"\n{'=' * 70}")
         print(f"Total size: {total_size:.2f} MB")
         print(f"{'=' * 70}\n")
+
+    def create_restricted_parking_layer(self):
+        """Create a layer showing only restricted/permit parking"""
+        
+        try:
+            street_path = os.path.join(self.clean_dir, 'street_parking_detailed.geojson')
+            
+            if not os.path.exists(street_path):
+                print("  ⊘ Street parking not found")
+                return None
+
+            street = gpd.read_file(street_path)
+            print(f"  ✓ Loaded {len(street)} street parking features")
+            
+            # Filter for restricted or permit zones
+            restricted = street[
+                (street['category_clean'].isin(['RESTRICTED', 'PERMIT', 'RPZ', 'CARPOOL'])) |
+                (street['is_permit_zone'] == True) |
+                (street['is_peak_hour_restricted'] == True)
+            ].copy()
+            
+            print(f"  → Found {len(restricted)} restricted/permit features")
+            
+            if len(restricted) == 0:
+                print("  ⊘ No restricted parking found in dataset")
+                return None
+            
+            # Convert to points (centroids)
+            restricted_points = restricted.copy()
+            restricted_points['geometry'] = restricted_points.geometry.centroid
+            
+            output_path = os.path.join(self.clean_dir, 'parking_restricted.geojson')
+            restricted_points.to_crs('EPSG:4326').to_file(output_path, driver='GeoJSON')
+            
+            print(f"  ✓ Created restricted parking layer with {len(restricted_points)} points")
+            self._print_file_size(output_path)
+            
+            return restricted_points
+            
+        except Exception as e:
+            print(f"  ✗ Error: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def run_all(self):
         """Run complete pipeline"""
@@ -453,6 +504,7 @@ class SeattleParkingCleaner:
         self.clean_parking_tiers()
         self.clean_garages()
         self.create_combined_dataset()
+        self.create_restricted_parking_layer()  
         
         self.verify_all_datasets()
         
@@ -466,8 +518,7 @@ class SeattleParkingCleaner:
         print("  • garages_clean.geojson - Public garages (if available)")
         print("  • parking_tiers_clean.geojson - Pricing zones (if available)")
         print("  • parking_all_points.geojson - Combined overview points")
-
-
+        print("  • parking_restricted.geojson - Restricted/permit zones")  
 def main():
     """Main execution"""
     cleaner = SeattleParkingCleaner(raw_dir='raw_data', clean_dir='assets')

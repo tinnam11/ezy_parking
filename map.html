@@ -44,10 +44,10 @@
                 <section class="panel">
                     <h2>Legend</h2>
                     <div class="legend" role="list">
-                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-garage" aria-hidden="true"></span><span>Garage location (off-street)</span></div>
-                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-street" aria-hidden="true"></span><span>On-street / blockface</span></div>
-                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-paid" aria-hidden="true"></span><span>Parking points</span></div>
-                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-restricted" aria-hidden="true"></span><span>Restricted / permit-only</span></div>
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-garage" aria-hidden="true"></span><span>Garage locations</span></div>
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-street" aria-hidden="true"></span><span>Street parking (blockface)</span></div>
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-paid" aria-hidden="true"></span><span>Parking overview points</span></div>
+                        <div class="legend-item" role="listitem"><span class="legend-symbol symbol-restricted" aria-hidden="true"></span><span>Restricted / permit zones</span></div>
                     </div>
                 </section>
 
@@ -61,14 +61,13 @@
                             <input id="searchInput" type="text" placeholder="e.g., 400 Pike St, Seattle" aria-label="Search address or place">
                             <button id="btnSearch" title="Find nearest parking">Find</button>
                         </div>
-
-                        <label for="priceFilter">Price range</label>
-                        <select id="priceFilter" aria-label="Filter by price">
-                            <option value="all">All prices</option>
-                            <option value="low">Under $15</option>
-                            <option value="mid">$15–$30</option>
-                            <option value="high">Over $30</option>
-                        </select>
+                        
+                        <label for="priceRange">Max price ($/hour): $<span id="priceDisplay">10</span></label>
+                        <input id="priceRange" type="range" min="0" max="10" step="0.5" value="10" 
+                            style="width:100%" aria-label="Maximum price slider">
+                        <div style="font-size:0.82rem;color:var(--muted);margin-top:0.2rem">
+                            Filters street parking only. Garages shown always.
+                        </div>
 
                         <div style="display:flex;gap:.6rem">
                             <div style="flex:1">
@@ -85,24 +84,23 @@
 
                         <label style="margin-top:.4rem">Layers</label>
                         <div class="layer-toggles" role="group" aria-label="Layer toggles">
-                            <!-- these inputs are used by the JS below to toggle layer visibility -->
                             <label class="layer-toggle"><input id="toggleGarages" type="checkbox" checked>Garages</label>
-                            <label class="layer-toggle"><input id="toggleBlockface" type="checkbox" checked>On-street</label>
-                            <label class="layer-toggle"><input id="toggleRestricted" type="checkbox" checked>Parking points</label>
+                            <label class="layer-toggle"><input id="toggleBlockface" type="checkbox" checked>Street parking</label>
+                            <label class="layer-toggle"><input id="togglePoints" type="checkbox" checked>Overview points</label>
+                            <label class="layer-toggle"><input id="toggleRestricted" type="checkbox" checked>Restricted/Permit</label>
                         </div>
 
                         <label for="sortSelect" style="margin-top:.3rem">Sort results</label>
                         <select id="sortSelect" aria-label="Sort results">
                             <option value="distance">Distance</option>
                             <option value="price">Price</option>
-
                         </select>
 
                         <div id="searchResults" class="results" aria-live="polite">Enter an address and press "Find" to show nearby parking here.</div>
                     </form>
                 </section>
 
-                <div class="sidebar-footer">Data source: ....<br>Created for GEOG328.</div>
+                <div class="sidebar-footer">Data source: Seattle GeoData<br>Created for GEOG328.</div>
             </aside>
 
             <section class="map-wrap" aria-label="Map view">
