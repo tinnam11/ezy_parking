@@ -13,7 +13,7 @@ The Team:
 This project is an interactive WebGIS application designed to help users explore Seattle’s on-street and off-street parking through a clean, modern, and accessible interface.
 It uses Mapbox GL JS, custom controls, live filters, geolocation, and search tools to let users locate parking quickly and intuitively.
 
-**🚗 Project Overview**
+## 🚗 Project Overview
 
 The Seattle Parking Map displays parking garages, street parking blockfaces, overview points, and restricted permit zones.
 Users can:
@@ -34,7 +34,7 @@ Users can:
 
 **Built for GEOG 328: Web GIS, this project highlights practical spatial analysis and UI/UX design for geospatial applications.**
 
-**🗺️ Features**
+## 🗺️ Features
 
 **1. Search & Directions Support**
 
