@@ -166,7 +166,9 @@ ChatGPT was used to:
 
 - Suggest structure and wording
 
-- Help refine explanations
+- Help with coding suggestions
+
+- Provide information regarding Mapbox GL JS
 
 - Provide grammar corrections and organization
 
