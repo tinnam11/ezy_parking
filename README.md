@@ -38,6 +38,15 @@ Users can:
 
 This project aims to visualize Seattle's parking availability, and provide meaningful insights for residents, city planners and tourists. By leveraging geospatial data, we strive to enhance urban mobility and contribute to more efficient parking management in Seattle, as well as improve parking accessibility for all users.
 
+## Application URL
+
+**Live Map:**
+https://tinnam11.github.io/ezy_parking/
+
+![Home Page](<img/Screenshot 2025-12-03 at 8.37.35 PM.png>)
+![Map2](<img/Screenshot 2025-12-03 at 8.37.42 PM.png>)
+![Map1](<img/Screenshot 2025-12-03 at 8.37.56 PM.png>)
+
 ## 🗺️ Features
 
 **1. Search & Directions Support**
