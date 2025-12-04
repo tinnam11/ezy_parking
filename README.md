@@ -34,6 +34,10 @@ Users can:
 
 **Built for GEOG 328: Web GIS, this project highlights practical spatial analysis and UI/UX design for geospatial applications.**
 
+## Project Goals
+
+This project aims to visualize Seattle's parking availability, and provide meaningful insights for residents, city planners and tourists. By leveraging geospatial data, we strive to enhance urban mobility and contribute to more efficient parking management in Seattle, as well as improve parking accessibility for all users.
+
 ## 🗺️ Features
 
 **1. Search & Directions Support**
