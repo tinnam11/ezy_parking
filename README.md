@@ -163,8 +163,11 @@ Special thanks to our **professor** and **peers** for their feedback throughout 
 ChatGPT was used to:
 
 - Improve readability and formatting of the README
+
 - Suggest structure and wording
+
 - Help refine explanations
+
 - Provide grammar corrections and organization
 
 All code was reviewed, adapted, and integrated manually by the team. AI was used as a support tool only, and the final implementation reflects the team’s decisions and edits.
