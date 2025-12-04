@@ -49,6 +49,12 @@ async function addGeoJSONLayer(options) {
     const resp = await fetch(geojsonPath);
     if (!resp.ok) throw new Error(`Failed to fetch ${geojsonPath}: ${resp.statusText}`);
     const data = await resp.json();
+    // keep a deep copy of the original data for this source (used by time filter)
+    try {
+      originalSourceData[sourceId] = JSON.parse(JSON.stringify(data));
+    } catch (err) {
+      originalSourceData[sourceId] = data;
+    }
     // create or update source
     if (map.getSource(sourceId)) {
       map.getSource(sourceId).setData(data);
@@ -168,6 +174,94 @@ function applyPriceRangeFilter() {
   });
 }
 
+// --- Time filter helpers ---
+function timeStrToMinutes(t) {
+  if (!t && t !== '00:00') return null;
+  if (typeof t !== 'string') return null;
+  const parts = t.split(':');
+  if (parts.length < 2) return null;
+  const hh = parseInt(parts[0], 10);
+  const mm = parseInt(parts[1], 10);
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return hh * 60 + mm;
+}
+
+function rangesFromInterval(startMin, endMin) {
+  // return array of [s,e] intervals in 0..1439 that represent the interval,
+  // splitting wrap-around intervals into two parts
+  if (startMin == null || endMin == null) return [[0, 24 * 60 - 1]];
+  if (startMin <= endMin) return [[startMin, endMin]];
+  // wrap-around
+  return [[startMin, 24 * 60 - 1], [0, endMin]];
+}
+
+function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
+  const aRanges = rangesFromInterval(aStart, aEnd);
+  const bRanges = rangesFromInterval(bStart, bEnd);
+  for (const [as, ae] of aRanges) {
+    for (const [bs, be] of bRanges) {
+      if (as <= be && bs <= ae) return true;
+    }
+  }
+  return false;
+}
+
+function restoreSourceToOriginal(sourceId) {
+  const orig = originalSourceData[sourceId];
+  if (!orig) return;
+  const src = map.getSource(sourceId);
+  if (src) src.setData(JSON.parse(JSON.stringify(orig)));
+}
+
+function applyTimeFilter() {
+  // sources to apply time filtering to (do not filter garages)
+  const sourceIds = ['streetparking-src', 'parkingpoints-src', 'restricted-src'];
+
+  const useNow = document.getElementById('timeNow')?.checked;
+  let selStart = document.getElementById('timeFrom')?.value || '';
+  let selEnd = document.getElementById('timeTo')?.value || '';
+
+  if (useNow) {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    selStart = `${hh}:${mm}`;
+    selEnd = selStart;
+  }
+
+  // if neither start nor end provided and not using now -> restore originals
+  if ((!selStart || selStart === '') && (!selEnd || selEnd === '') && !useNow) {
+    sourceIds.forEach(sid => restoreSourceToOriginal(sid));
+    return;
+  }
+
+  const selStartMin = timeStrToMinutes(selStart);
+  const selEndMin = timeStrToMinutes(selEnd != null && selEnd !== '' ? selEnd : selStart);
+
+  sourceIds.forEach((sid) => {
+    const orig = originalSourceData[sid];
+    if (!orig) return;
+    // filter features by overlap between selected interval and feature's weekday_start/weekday_end
+    const filtered = orig.features.filter((f) => {
+      const p = f.properties || {};
+      const fStart = p.weekday_start || p.start || null;
+      const fEnd = p.weekday_end || p.end || null;
+      // if no time restrictions on feature -> include
+      if (!fStart && !fEnd) return true;
+      const fStartMin = timeStrToMinutes(fStart);
+      const fEndMin = timeStrToMinutes(fEnd);
+      // If feature times are invalid, include conservatively
+      if (fStartMin == null || fEndMin == null) return true;
+      return intervalsOverlap(fStartMin, fEndMin, selStartMin, selEndMin);
+    });
+
+    const newGeo = { type: 'FeatureCollection', features: filtered };
+    const src = map.getSource(sid);
+    if (src) src.setData(newGeo);
+  });
+}
+
+
 //search marker (global so we can remove it later)
 let searchMarker = null;
 
@@ -271,19 +365,52 @@ function calculateNearbyParking(searchLng, searchLat) {
     }
   });
   
-  //sort by distance or price based on sortSelect
-  const sortBy = document.getElementById('sortSelect')?.value || 'distance';
-  results.sort((a, b) => {
-    if (sortBy === 'distance') {
-      return a.distance - b.distance;
-    } else {
-      const priceA = typeof a.rate === 'number' ? a.rate : 999;
-      const priceB = typeof b.rate === 'number' ? b.rate : 999;
-      return priceA - priceB;
+  // If travel-time filtering is enabled, compute durations for nearby candidates
+  const useTravel = document.getElementById('useTravelTime')?.checked;
+  const travelModeVal = document.getElementById('travelMode')?.value || 'walking';
+  const maxMin = parseFloat(document.getElementById('travelTimeRange')?.value || 0);
+
+  async function finalizeResults() {
+    let final = results;
+    if (useTravel && maxMin > 0) {
+      // take up to matrixLimit closest candidates to compute accurate durations
+      const candidates = results.sort((a,b)=>a.distance-b.distance).slice(0, TRAVEL.matrixLimit);
+      const destinations = candidates.map(c => c.coordinates);
+      const origin = [searchLng, searchLat];
+      const durations = await fetchMatrixDurations(origin, destinations, travelModeVal);
+      const cutoff = maxMin * 60;
+      // filter candidates by duration (fallback to distance estimate when duration null)
+      const allowedSet = new Set();
+      candidates.forEach((c, i) => {
+        const d = durations[i];
+        if (d != null) {
+          if (d <= cutoff) allowedSet.add(c);
+        } else {
+          const estSec = (c.distance / milesPerMinuteForMode(travelModeVal)) * 60;
+          if (estSec <= cutoff) allowedSet.add(c);
+        }
+      });
+      // final = those in allowedSet, keep original ordering by distance
+      final = results.filter(r => allowedSet.has(r));
     }
-  });
-  
-  displaySearchResults(results.slice(0, 15)); //show top 15
+
+    //sort by distance or price based on sortSelect
+    const sortBy = document.getElementById('sortSelect')?.value || 'distance';
+    final.sort((a, b) => {
+      if (sortBy === 'distance') {
+        return a.distance - b.distance;
+      } else {
+        const priceA = typeof a.rate === 'number' ? a.rate : 999;
+        const priceB = typeof b.rate === 'number' ? b.rate : 999;
+        return priceA - priceB;
+      }
+    });
+
+    displaySearchResults(final.slice(0, 15)); //show top 15
+  }
+
+  // run the async finalize
+  finalizeResults().catch(err => { console.warn('Error finalizing search results', err); displaySearchResults(results.slice(0,15)); });
 }
 
 function displaySearchResults(results) {
@@ -455,6 +582,33 @@ map.on('load', async () => {
     });
   }
 
+  // Wire up time filter inputs
+  const timeFrom = document.getElementById('timeFrom');
+  const timeTo = document.getElementById('timeTo');
+  const timeNow = document.getElementById('timeNow');
+  if (timeFrom) timeFrom.addEventListener('input', applyTimeFilter);
+  if (timeTo) timeTo.addEventListener('input', applyTimeFilter);
+  if (timeNow) timeNow.addEventListener('change', applyTimeFilter);
+
+  // apply initial time filter if any values present
+  applyTimeFilter();
+
+  // Wire travel-time UI controls
+  const travelRange = document.getElementById('travelTimeRange');
+  const travelDisplay = document.getElementById('travelTimeDisplay');
+  const travelMode = document.getElementById('travelMode');
+  const useTravel = document.getElementById('useTravelTime');
+  if (travelRange && travelDisplay) {
+    travelDisplay.textContent = travelRange.value;
+    travelRange.addEventListener('input', (e) => {
+      travelDisplay.textContent = e.target.value;
+    });
+    travelRange.addEventListener('change', applyTravelTimeFilter);
+  }
+  if (travelMode) travelMode.addEventListener('change', applyTravelTimeFilter);
+  if (useTravel) useTravel.addEventListener('change', applyTravelTimeFilter);
+
+
   // Zoom buttons
   const btnZoomIn = document.getElementById('btnZoomIn');
   const btnZoomOut = document.getElementById('btnZoomOut');
@@ -492,3 +646,147 @@ map.on('load', async () => {
 
   map.getCanvas().style.cursor = 'default';
 });
+
+// store original fetched GeoJSON data so we can restore and filter safely
+const originalSourceData = {};
+
+// travel time settings and Mapbox Matrix integration
+const TRAVEL = {
+  speeds: { // mph
+    walking: 3.0,
+    driving: 25.0
+  },
+  // limit destinations in single Matrix request to avoid hitting API limits
+  matrixLimit: 25
+};
+
+function getFeatureCoords(feature) {
+  if (!feature || !feature.geometry) return null;
+  if (feature.geometry.type === 'Point') return feature.geometry.coordinates;
+  if (feature.geometry.type === 'LineString') return feature.geometry.coordinates[0];
+  if (feature.geometry.type === 'MultiLineString' && feature.geometry.coordinates.length) return feature.geometry.coordinates[0][0];
+  return null;
+}
+
+function milesPerMinuteForMode(mode) {
+  const mph = TRAVEL.speeds[mode] || TRAVEL.speeds.walking;
+  return mph / 60.0;
+}
+
+async function fetchMatrixDurations(origin, destinations, mode) {
+  // origin: [lng, lat]
+  // destinations: array of [lng, lat]
+  // returns array of durations in seconds (null if unknown) same order as destinations
+  if (!origin || !destinations || destinations.length === 0) return [];
+
+  const coords = [origin].concat(destinations).map(c => `${c[0]},${c[1]}`).join(';');
+  const destIndexes = destinations.map((_, i) => i + 1).join(';');
+  const profile = mode === 'driving' ? 'driving' : 'walking';
+  const url = `https://api.mapbox.com/directions-matrix/v1/mapbox/${profile}/${coords}?sources=0&destinations=${destIndexes}&annotations=duration&access_token=${mapboxgl.accessToken}`;
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`Matrix request failed: ${resp.statusText}`);
+    const data = await resp.json();
+    if (!data || !data.durations || !Array.isArray(data.durations) || data.durations.length === 0) return destinations.map(() => null);
+    const row = data.durations[0] || [];
+    // Mapbox may return nulls for unreachable
+    return row.map(d => (d == null ? null : d));
+  } catch (err) {
+    console.warn('Matrix error', err);
+    return destinations.map(() => null);
+  }
+}
+
+function getOriginFallback() {
+  // return [lng, lat] from searchMarker, else current geolocation (if available), else map center
+  if (searchMarker) return [searchMarker.getLngLat().lng, searchMarker.getLngLat().lat];
+  // prefer last known geolocation if available via navigator (synchronous fallback)
+  if (map && map.getCenter) {
+    const c = map.getCenter();
+    return [c.lng, c.lat];
+  }
+  return null;
+}
+
+async function applyTravelTimeFilter() {
+  const use = document.getElementById('useTravelTime')?.checked;
+  const maxMin = parseFloat(document.getElementById('travelTimeRange')?.value || 0);
+  const mode = document.getElementById('travelMode')?.value || 'walking';
+
+  if (!use || !maxMin || maxMin <= 0) {
+    // restore original data for the sources we filtered earlier
+    ['streetparking-src', 'parkingpoints-src', 'restricted-src'].forEach(restoreSourceToOriginal);
+    return;
+  }
+
+  const origin = getOriginFallback();
+  if (!origin) return;
+
+  // gather candidates from originals
+  const sourceIds = ['streetparking-src', 'parkingpoints-src', 'restricted-src'];
+  const allCandidates = [];
+  const featureSourceMap = {};
+
+  sourceIds.forEach((sid) => {
+    const orig = originalSourceData[sid];
+    if (!orig || !orig.features) return;
+    orig.features.forEach((f, idx) => {
+      const coords = getFeatureCoords(f);
+      if (!coords) return;
+      const distance = calculateDistance(origin[0], origin[1], coords[0], coords[1]);
+      allCandidates.push({ sid, idx, feature: f, coords, distance });
+    });
+  });
+
+  // estimate a loose distance threshold to prefilter candidates: maxMin * speed_miles_per_min * buffer
+  const mpmin = milesPerMinuteForMode(mode);
+  const maxDistance = Math.max(0.5, maxMin * mpmin * 1.5); // at least 0.5 miles
+
+  // keep only those within maxDistance, sort by distance
+  let candidates = allCandidates.filter(c => c.distance <= maxDistance).sort((a,b) => a.distance - b.distance);
+
+  // if no candidates by distance, expand a bit to include some for routing
+  if (candidates.length === 0) {
+    candidates = allCandidates.sort((a,b)=>a.distance - b.distance).slice(0, TRAVEL.matrixLimit);
+  }
+
+  // split into two groups: those we will query via Matrix (limited) and remaining will be approximated
+  const matrixTargets = candidates.slice(0, TRAVEL.matrixLimit);
+  const approxTargets = candidates.slice(TRAVEL.matrixLimit);
+
+  const destinations = matrixTargets.map(t => t.coords);
+  const durations = await fetchMatrixDurations(origin, destinations, mode);
+
+  // build set of allowed features
+  const allowed = new Set();
+  const cutoffSec = maxMin * 60;
+
+  matrixTargets.forEach((t, i) => {
+    const dur = durations[i];
+    if (dur != null) {
+      if (dur <= cutoffSec) allowed.add(`${t.sid}::${t.idx}`);
+    } else {
+      // if unreachable in matrix, fall back to distance estimate
+      const estimateSec = (t.distance / milesPerMinuteForMode(mode)) * 60; // distance (miles) / (miles/min) => minutes * 60 -> sec
+      if (estimateSec <= cutoffSec) allowed.add(`${t.sid}::${t.idx}`);
+    }
+  });
+
+  // process approxTargets using a simple estimate
+  approxTargets.forEach(t => {
+    const estMin = t.distance / milesPerMinuteForMode(mode);
+    if (estMin <= maxMin * 1.05) allowed.add(`${t.sid}::${t.idx}`);
+  });
+
+  // For features not evaluated (outside initial candidates), default to excluded
+  // Now create filtered GeoJSON per source and setData
+  sourceIds.forEach((sid) => {
+    const orig = originalSourceData[sid];
+    if (!orig) return;
+    const filtered = orig.features.filter((f, idx) => allowed.has(`${sid}::${idx}`));
+    const newGeo = { type: 'FeatureCollection', features: filtered };
+    const src = map.getSource(sid);
+    if (src) src.setData(newGeo);
+  });
+}

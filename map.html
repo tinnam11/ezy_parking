@@ -96,6 +96,17 @@
                             <option value="price">Price</option>
                         </select>
 
+                        <label for="useTravelTime" style="margin-top:.3rem"><input id="useTravelTime" type="checkbox">&nbsp;Filter by travel time</label>
+
+                        <label for="travelTimeRange" style="margin-top:.3rem">Max travel time (minutes): <span id="travelTimeDisplay">10</span></label>
+                        <input id="travelTimeRange" type="range" min="1" max="60" step="1" value="10" style="width:100%" aria-label="Max travel time slider">
+
+                        <label for="travelMode" style="margin-top:.2rem">Mode</label>
+                        <select id="travelMode" aria-label="Travel mode">
+                            <option value="walking">Walking</option>
+                            <option value="driving">Driving</option>
+                        </select>
+
                         <div id="searchResults" class="results" aria-live="polite">Enter an address and press "Find" to show nearby parking here.</div>
                     </form>
                 </section>
