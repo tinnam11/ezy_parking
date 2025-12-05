@@ -406,3 +406,247 @@ body {
     flex-direction: column;
   }
 }
+
+/* Phone/Mobile screens */
+@media (max-width: 640px) {
+  /* Reduce header padding and text size */
+  .app-header {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .app-title {
+    font-size: 1.1rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.75rem;
+  }
+
+  /* Stack header buttons vertically or make more compact */
+  .app-header > div:last-child {
+    display: flex;
+    gap: 0.3rem;
+  }
+
+  .map-btn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  /* Sidebar adjustments */
+  .sidebar {
+    width: 100%;
+    max-height: 25vh;
+    overflow-y: auto;
+    padding: 0.7rem;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  /* Make panels more compact */
+  .panel {
+    padding: 0.7rem 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .panel h2 {
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .panel p {
+    font-size: 0.8rem;
+    margin: 0.2rem 0;
+  }
+
+  /* Compact legend on mobile */
+  .legend-item {
+    font-size: 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .legend-symbol {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Form inputs and labels */
+  .filters label {
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .filters select,
+  .filters input[type="text"],
+  .filters input[type="time"],
+  .filters input[type="range"] {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+  }
+
+  .filter-note {
+    font-size: 0.7rem;
+  }
+
+  #filtersDesc {
+    font-size: 0.75rem;
+    margin-bottom: 0.3rem;
+  }
+
+  /* Time row: keep side-by-side but reduce gaps */
+  .time-row {
+    gap: 0.4rem;
+  }
+
+  .time-col label {
+    font-size: 0.75rem;
+  }
+
+  /* Search row: stack on very small screens if needed */
+  .search-row {
+    gap: 0.3rem;
+  }
+
+  .search-row button {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  /* Layer toggles: more compact */
+  .layer-toggles {
+    gap: 0.3rem;
+  }
+
+  .layer-toggle {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.35rem;
+    gap: 0.3rem;
+  }
+
+  .layer-toggle input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Chips more compact */
+  .chips {
+    gap: 0.3rem;
+  }
+
+  .chip {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+  }
+
+  /* Travel time display */
+  #travelTimeDisplay {
+    font-weight: 600;
+  }
+
+  /* Results section */
+  .results {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+    margin-top: 0.4rem;
+  }
+
+  .result-item {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .result-item strong {
+    font-size: 0.8rem;
+  }
+
+  /* Map controls positioning */
+  .map-controls {
+    left: 0.5rem;
+    top: 0.5rem;
+    gap: 0.4rem;
+  }
+
+  /* Map legend overlay */
+  .map-legend-overlay {
+    right: 0.5rem;
+    bottom: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.75rem;
+    max-width: 280px;
+  }
+
+  .map-legend-overlay strong {
+    font-size: 0.8rem;
+  }
+
+  /* Spacing adjustments */
+  .label-spaced {
+    margin-top: 0.2rem;
+  }
+
+  .label-spaced-md {
+    margin-top: 0.3rem;
+  }
+
+  .label-spaced-sm {
+    margin-top: 0.1rem;
+  }
+
+  .label-spaced-xs {
+    margin-top: 0.1rem;
+  }
+}
+
+/* Extra small screens (< 480px) */
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 0.95rem;
+  }
+
+  .app-subtitle {
+    display: none;
+  }
+
+  .sidebar {
+    max-height: 22vh;
+  }
+
+  .panel {
+    padding: 0.6rem 0.7rem;
+  }
+
+  .panel h2 {
+    font-size: 0.8rem;
+  }
+
+  .filters select,
+  .filters input[type="text"],
+  .filters input[type="time"],
+  .filters input[type="range"] {
+    font-size: 0.75rem;
+  }
+
+  .map-btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .search-row button {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  /* Hide map legend overlay on very small screens to save space */
+  .map-legend-overlay {
+    display: none;
+  }
+
+  /* Ensure map controls are easily tappable */
+  .map-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
