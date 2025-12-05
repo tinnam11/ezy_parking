@@ -160,7 +160,7 @@ Special thanks to our **professor** and **peers** for their feedback throughout 
 
 ## AI Use Disclosure
 
-ChatGPT was used to:
+ChatGPT and Copilot was used to:
 
 - Improve readability and formatting of the README
 
@@ -173,6 +173,8 @@ ChatGPT was used to:
 - Provide grammar corrections and organization
 
 All code was reviewed, adapted, and integrated manually by the team. AI was used as a support tool only, and the final implementation reflects the team’s decisions and edits.
+
+Math distance calculation formula based on: https://www.movable-type.co.uk/scripts/latlong.html
 
 ## Additional Notes
 
