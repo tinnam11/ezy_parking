@@ -24,9 +24,10 @@
             </div>
 
             <div>
-                <button class="map-btn" onclick="window.location.href='index.html'" aria-label="Back to homepage">
-                    ⟵ Home
+                <button id="btnHome" class="map-btn" aria-label="Back to homepage">
+                ⟵ Home
                 </button>
+
                 <button class="map-btn" aria-label="Center on my location" id="btnGeolocate">
                     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" width="16" height="16"><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12h-1M4 12H3M12 21v-1M12 4V3M18.36 5.64l-.7.7M6.34 17.66l-.7.7M18.36 18.36l-.7-.7M6.34 6.34l-.7-.7" stroke="#0f172a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     My location
@@ -35,7 +36,7 @@
         </header>
 
         <main class="app-main">
-            <aside class="sidebar" aria-label="Map controls">
+            <aside class="sidebar" id="sidebar" aria-label="Map controls">
                 <section class="panel">
                     <h2>About this map</h2>
                     <p>An interactive WebGIS to locate parking in Seattle. Use the filters below to limit results and the legend to interpret map symbols.</p>
@@ -121,7 +122,8 @@
                 <div class="map-controls" role="toolbar" aria-label="Map controls">
                     <button id="btnZoomIn" class="map-btn" aria-label="Zoom in">+</button>
                     <button id="btnZoomOut" class="map-btn" aria-label="Zoom out">−</button>
-                    <button id="btnToggleLegend" class="map-btn" aria-label="Toggle map legend">Legend</button>
+                    <button id="btnToggleSidebar" class="map-btn" aria-label="Toggle sidebar panel" 
+                    aria-controls="sidebar" aria-expanded="true">Minimize</button>
                 </div>
 
                 <div class="map-legend-overlay" id="mapLegend" aria-hidden="false">

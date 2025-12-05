@@ -104,6 +104,11 @@ body {
   box-shadow: var(--shadow-hover);
 }
 
+/* When collapsed hide sidebar */
+.app-main.sidebar-collapsed .sidebar {
+  display: none;
+}
+
 /* ------------------------------ */
 /*          Panels / UI           */
 /* ------------------------------ */

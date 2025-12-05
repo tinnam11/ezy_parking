@@ -615,6 +615,33 @@ map.on('load', async () => {
   if (btnZoomIn) btnZoomIn.addEventListener('click', () => map.zoomIn());
   if (btnZoomOut) btnZoomOut.addEventListener('click', () => map.zoomOut());
 
+  // Home button
+  const btnHome = document.getElementById('btnHome');
+  if (btnHome) {
+    btnHome.addEventListener('click', () => {
+    window.location.href = 'index.html';
+    });
+  }
+
+
+  // Sidebar minimize / maximize
+  const appMain = document.querySelector('.app-main');
+  const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+
+  if (appMain && btnToggleSidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+      const collapsed = appMain.classList.toggle('sidebar-collapsed');
+
+      // ARIA state
+      btnToggleSidebar.setAttribute('aria-expanded', String(!collapsed));
+
+      // Button text
+      btnToggleSidebar.textContent = collapsed ? 'Maximize' : 'Minimize';
+
+      map.resize()
+    });
+  }
+
   // Geolocate button
   const btnGeolocate = document.getElementById('btnGeolocate');
   if (btnGeolocate) {
