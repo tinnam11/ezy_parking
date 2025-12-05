@@ -303,11 +303,11 @@ async function searchAndFilterByDistance() {
       
       calculateNearbyParking(lng, lat);
     } else {
-      resultsDiv.innerHTML = '<p style="color:#ef4444">❌ Location not found. Try a different address.</p>';
+      resultsDiv.innerHTML = '<p style="color:#ef4444"> Location not found. Try a different address.</p>';
     }
   } catch (error) {
     console.error('Geocoding error:', error);
-    resultsDiv.innerHTML = '<p style="color:#ef4444">❌ Error searching for location. Please try again.</p>';
+    resultsDiv.innerHTML = '<p style="color:#ef4444"> Error searching for location. Please try again.</p>';
   }
 }
 
@@ -330,6 +330,9 @@ function calculateNearbyParking(searchLng, searchLat) {
   //all parking features from all sources
   const sources = [
     { id: 'garages-src', type: 'Garage' },
+    // include blockface/line source so time filters on street blockfaces
+    // (which use weekday_start/weekday_end) affect search results
+    { id: 'streetparking-src', type: 'Blockface' },
     { id: 'parkingpoints-src', type: 'Street' },
     { id: 'restricted-src', type: 'Restricted' }
   ];
@@ -370,6 +373,13 @@ function calculateNearbyParking(searchLng, searchLat) {
   const travelModeVal = document.getElementById('travelMode')?.value || 'walking';
   const maxMin = parseFloat(document.getElementById('travelTimeRange')?.value || 0);
 
+  // add an estimated travel time (seconds) for each result so we can sort
+  // by travel time visually even before full travel-time filtering is implemented
+  results.forEach(r => {
+    r.estimatedSec = (r.distance / milesPerMinuteForMode(travelModeVal)) * 60; // seconds
+    r.actualSec = null; // will be filled with matrix durations when available
+  });
+
   async function finalizeResults() {
     let final = results;
     if (useTravel && maxMin > 0) {
@@ -384,9 +394,11 @@ function calculateNearbyParking(searchLng, searchLat) {
       candidates.forEach((c, i) => {
         const d = durations[i];
         if (d != null) {
+          c.actualSec = d; // store exact duration (seconds)
           if (d <= cutoff) allowedSet.add(c);
         } else {
           const estSec = (c.distance / milesPerMinuteForMode(travelModeVal)) * 60;
+          c.actualSec = null;
           if (estSec <= cutoff) allowedSet.add(c);
         }
       });
@@ -406,11 +418,26 @@ function calculateNearbyParking(searchLng, searchLat) {
       }
     });
 
-    displaySearchResults(final.slice(0, 15)); //show top 15
+    // If the user has enabled the "Use travel time" checkbox, sort by travel
+    // time (prefer exact matrix durations when available, otherwise use the
+    // estimate) and show the full list so users can inspect ordering by travel
+    // time. If not using travel-time mode, show the top 15 as before.
+    const showByTravel = document.getElementById('useTravelTime')?.checked;
+    if (showByTravel) {
+      final.sort((a, b) => ( (a.actualSec ?? a.estimatedSec) - (b.actualSec ?? b.estimatedSec) ));
+      displaySearchResults(final);
+    } else {
+      displaySearchResults(final.slice(0, 15)); //show top 15
+    }
   }
 
   // run the async finalize
-  finalizeResults().catch(err => { console.warn('Error finalizing search results', err); displaySearchResults(results.slice(0,15)); });
+  finalizeResults().catch(err => {
+    console.warn('Error finalizing search results', err);
+    const showByTravel = document.getElementById('useTravelTime')?.checked;
+    if (showByTravel) displaySearchResults(results);
+    else displaySearchResults(results.slice(0,15));
+  });
 }
 
 function displaySearchResults(results) {
