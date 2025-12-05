@@ -474,6 +474,7 @@ function displaySearchResults(results) {
 }
 
 map.on('load', async () => {
+  
   // Garages (points)
   await addGeoJSONLayer({
     sourceId: 'garages-src',
@@ -522,7 +523,67 @@ map.on('load', async () => {
       'circle-stroke-width': 1.5,
       'circle-stroke-color': '#ffffff'
     }
+    
   });
+
+  // my location button
+const btnGeo = document.getElementById('btnGeolocate');
+
+if (btnGeo) {
+  btnGeo.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const userLng = pos.coords.longitude;
+        const userLat = pos.coords.latitude;
+
+        map.flyTo({
+          center: [userLng, userLat],
+          zoom: 15,
+          essential: true
+        });
+
+        if (window.userLocationMarker) {
+          const addressCoords = data.features[0].geometry.coordinates;
+
+          window.userLocationMarker.setLngLat(addressCoords);
+        } else {
+          window.userLocationMarker = new mapboxgl.Marker({ color: '#0ea5e9' })
+            .setLngLat([userLng, userLat])
+            .setPopup(new mapboxgl.Popup().setHTML(`<strong>You are here</strong>`))
+            .addTo(map);
+        }
+
+        const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${userLng},${userLat}.json?access_token=${mapboxgl.accessToken}`;
+
+        try {
+          const response = await fetch(geocodeUrl);
+          const data = await response.json();
+
+          if (data.features && data.features.length > 0) {
+            const address = data.features[0].place_name; 
+
+            const searchInput = document.getElementById("searchInput");
+            if (searchInput) {
+              searchInput.value = address;
+            }
+          }
+        } catch (err) {
+          console.error("Reverse geocoding failed:", err);
+        }
+      },
+
+      (err) => {
+        alert('Unable to retrieve your location: ' + err.message);
+      }
+    );
+
+  });
+}
 
   
   const initVisibility = [
