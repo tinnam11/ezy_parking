@@ -408,7 +408,7 @@ body {
 }
 
 /* Phone/Mobile screens */
-@media (max-width: 640px) {
+@media (max-width: 880px) {
   /* Reduce header padding and text size */
   .app-header {
     padding: 0.75rem 1rem;
