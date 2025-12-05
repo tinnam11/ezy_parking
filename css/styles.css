@@ -9,6 +9,13 @@
   --border-glass: rgba(255, 255, 255, 0.25);
   --shadow-soft: 0 4px 12px rgba(0,0,0,0.25);
   --shadow-hover: 0 6px 18px rgba(0,0,0,0.32);
+  
+  --text-main: #000000;
+  --muted: #d9e3ed
+  --accent: #2563eb;
+  --panel-bg: #2a75c0;
+  --glass-border: rgba(255, 255, 255, 0.134);
+
 }
 
 * {
@@ -115,6 +122,11 @@ body {
   font-weight: 600;
 }
 
+.panel + .panel {
+  margin-top: 0.8rem;
+}
+
+
 /* ------------------------------ */
 /*           Chips                */
 /* ------------------------------ */
@@ -130,7 +142,7 @@ body {
   font-size: 0.75rem;
   padding: 0.22rem 0.6rem;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(142, 172, 236, 0.59);
   border: 1px solid rgba(37, 99, 235, 0.12);
   color: var(--accent);
 }
@@ -176,6 +188,8 @@ body {
   background: linear-gradient(135deg, #c026d3, #7c3aed);
 }
 
+
+
 /* ------------------------------ */
 /*            Filters             */
 /* ------------------------------ */
@@ -207,6 +221,44 @@ body {
   color: var(--text-main);
   outline: none;
 }
+
+.filter-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+#filtersDesc {
+  margin: 0 0 .4rem 0;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.time-row {
+  display: flex;
+  gap: .6rem;
+}
+
+.time-col {
+  flex: 1;
+}
+
+.label-spaced-sm {
+  margin-top: .15rem;
+}
+
+.label-spaced-md {
+  margin-top: .4rem;
+}
+
+.label-spaced {
+  margin-top: .3rem;
+}
+
+.label-spaced-xs {
+  margin-top: .2rem;
+}
+
 
 /* ------------------------------ */
 /*          Search Row            */
@@ -304,6 +356,19 @@ body {
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
 }
+
+.map-legend-overlay {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  background: rgba(255, 255, 255, .98);
+  padding: .6rem .75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, .06);
+  box-shadow: 0 10px 28px rgba(2, 6, 23, .06);
+  max-width: 320px;
+}
+
 
 /* ------------------------------ */
 /*            Results             */

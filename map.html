@@ -23,7 +23,7 @@
                 <div class="app-subtitle">Off-street & on-street parking around central Seattle</div>
             </div>
 
-            <div style="display:flex;gap:.6rem;align-items:center;">
+            <div>
                 <button class="map-btn" onclick="window.location.href='index.html'" aria-label="Back to homepage">
                     ⟵ Home
                 </button>
@@ -55,7 +55,7 @@
                 <section class="panel">
                     <h2>Filters & search</h2>
                     <form class="filters" id="filtersForm" aria-describedby="filtersDesc" onsubmit="return false;">
-                        <p id="filtersDesc" style="margin:0 0 .4rem 0;color:var(--muted);font-size:.82rem;">Search an address or place and the app will show nearby parking.</p>
+                        <p id="filtersDesc">Search an address or place and the app will show nearby parking.</p>
 
                         <label for="searchInput">Address or place</label>
                         <div class="search-row">
@@ -65,25 +65,25 @@
                         
                         <label for="priceRange">Max price ($/hour): $<span id="priceDisplay">10</span></label>
                         <input id="priceRange" type="range" min="0" max="10" step="0.5" value="10" 
-                            style="width:100%" aria-label="Maximum price slider">
-                        <div style="font-size:0.82rem;color:var(--muted);margin-top:0.2rem">
+                            aria-label="Maximum price slider">
+                        <div class="filter-note">
                             Filters street parking only. Garages shown always.
                         </div>
 
-                        <div style="display:flex;gap:.6rem">
-                            <div style="flex:1">
+                        <div class="time-row">
+                            <div class="time-col">
                                 <label for="timeFrom">Start time</label>
                                 <input id="timeFrom" type="time" class="small" aria-label="Start time">
                             </div>
-                            <div style="flex:1">
+                            <div class="time-col">
                                 <label for="timeTo">End time</label>
                                 <input id="timeTo" type="time" class="small" aria-label="End time">
                             </div>
                         </div>
 
-                        <label for="timeNow" style="margin-top:.15rem"><input id="timeNow" type="checkbox" aria-label="Use current time (Now)">&nbsp;Use current time ("Now")</label>
+                        <label for="timeNow" class="label-spaced-sm"><input id="timeNow" type="checkbox" aria-label="Use current time (Now)">&nbsp;Use current time ("Now")</label>
 
-                        <label style="margin-top:.4rem">Layers</label>
+                        <label class="label-spaced-md">Layers</label>
                         <div class="layer-toggles" role="group" aria-label="Layer toggles">
                             <label class="layer-toggle"><input id="toggleGarages" type="checkbox" checked>Garages</label>
                             <label class="layer-toggle"><input id="toggleBlockface" type="checkbox" checked>Street parking</label>
@@ -91,18 +91,18 @@
                             <label class="layer-toggle"><input id="toggleRestricted" type="checkbox" checked>Restricted/Permit</label>
                         </div>
 
-                        <label for="sortSelect" style="margin-top:.3rem">Sort results</label>
+                        <label for="sortSelect" class="label-spaced">Sort results</label>
                         <select id="sortSelect" aria-label="Sort results">
                             <option value="distance">Distance</option>
                             <option value="price">Price</option>
                         </select>
 
-                        <label for="useTravelTime" style="margin-top:.3rem"><input id="useTravelTime" type="checkbox">&nbsp;Filter by travel time</label>
+                        <label for="useTravelTime" class="label-spaced"><input id="useTravelTime" type="checkbox">&nbsp;Filter by travel time</label>
 
-                        <label for="travelTimeRange" style="margin-top:.3rem">Max travel time (minutes): <span id="travelTimeDisplay">10</span></label>
-                        <input id="travelTimeRange" type="range" min="1" max="60" step="1" value="10" style="width:100%" aria-label="Max travel time slider">
+                        <label for="travelTimeRange" class="label-spaced">Max travel time (minutes): <span id="travelTimeDisplay">10</span></label>
+                        <input id="travelTimeRange" type="range" min="1" max="60" step="1" value="10" aria-label="Max travel time slider">
 
-                        <label for="travelMode" style="margin-top:.2rem">Mode</label>
+                        <label for="travelMode" class="label-spaced-xs">Mode</label>
                         <select id="travelMode" aria-label="Travel mode">
                             <option value="walking">Walking</option>
                             <option value="driving">Driving</option>
@@ -124,9 +124,9 @@
                     <button id="btnToggleLegend" class="map-btn" aria-label="Toggle map legend">Legend</button>
                 </div>
 
-                <div class="map-legend-overlay" id="mapLegend" aria-hidden="false" style="position:absolute;right:1rem;bottom:1rem;background:rgba(255,255,255,.98);padding:.6rem .75rem;border-radius:10px;border:1px solid rgba(15,23,42,.06);box-shadow:0 10px 28px rgba(2,6,23,.06);max-width:320px">
+                <div class="map-legend-overlay" id="mapLegend" aria-hidden="false">
                     <strong>How to use</strong>
-                    <div style="font-size:.88rem;color:var(--muted)">Pan and zoom to explore the map. Click a symbol for details. Use the sidebar to filter by price or time.</div>
+                    <div class="legend-note">Pan and zoom to explore the map. Click a symbol for details. Use the sidebar to filter by price or time.</div>
                 </div>
             </section>
         </main>
