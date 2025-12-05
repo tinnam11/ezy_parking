@@ -58,18 +58,15 @@
                     <form class="filters" id="filtersForm" aria-describedby="filtersDesc" onsubmit="return false;">
                         <p id="filtersDesc">Search an address or place and the app will show nearby parking.</p>
 
-                        <label for="searchInput">Address or place</label>
+                        
                         <div class="search-row">
                             <input id="searchInput" type="text" placeholder="e.g., 400 Pike St, Seattle" aria-label="Search address or place">
                             <button id="btnSearch" title="Find nearest parking">Find</button>
                         </div>
                         
-                        <label for="priceRange">Max price ($/hour): $<span id="priceDisplay">10</span></label>
+                        <label for="priceRange" class="label-spaced">Max price ($/hour): $<span id="priceDisplay">10</span></label>
                         <input id="priceRange" type="range" min="0" max="10" step="0.5" value="10" 
                             aria-label="Maximum price slider">
-                        <div class="filter-note">
-                            Filters street parking only. Garages shown always.
-                        </div>
 
                         <div class="time-row">
                             <div class="time-col">
@@ -108,7 +105,9 @@
                             <option value="walking">Walking</option>
                             <option value="driving">Driving</option>
                         </select>
-
+                        <div class="filter-note">
+                            Filters street parking only. Garages shown always.
+                        </div>
                         <div id="searchResults" class="results" aria-live="polite">Enter an address and press "Find" to show nearby parking here.</div>
                     </form>
                 </section>
